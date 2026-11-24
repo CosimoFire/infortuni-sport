@@ -18,7 +18,8 @@
   .vw { font-size: 12px; font-weight: 600; fill: var(--ink-2); text-anchor: middle; }
   .fig-img { pointer-events: none; }
   :root[data-theme="dark"] .fig-img { filter: brightness(.86) contrast(1.05); }
-  .zone ellipse { cursor: pointer; }
+  .zone ellipse, .lab .link, .lab .dot, .lab .num, .lab .ring { pointer-events: none; }
+  .zhit { fill: transparent; cursor: pointer; }
   .lab { cursor: pointer; }
   .lab .link { fill: none; stroke: var(--ink-2); stroke-width: .75; }
   .lab .dot { fill: var(--ink); }
@@ -124,7 +125,7 @@
   var fig = document.getElementById("fig");
   var chart = document.getElementById("chart");
   var tip = Radar.tooltip(chart);
-  var DATA = {}, sport = "tennis", played = Radar.reduced, uid = 0;
+  var DATA = {}, sport = "tennis", played = Radar.reduced, uid = 0, offFn = null;
 
   function cssVar(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
   function colorScale() {
@@ -292,6 +293,17 @@
           .style("mix-blend-mode", dark ? "normal" : "multiply");
         allZone.push(g);
       });
+      // aree sensibili: le ellissi senza sfumatura, che quasi non si sovrappongono,
+      // così il cursore non salta da una voce all'altra
+      var gHit = gFig.append("g");
+      data.forEach(function (d) {
+        var z = G.z[d.k];
+        var pts = z.p.filter(function (p) { return p[0] >= row.u[0] - 60 && p[0] <= row.u[1] + 60; });
+        gHit.selectAll(null).data(pts).join("ellipse").attr("class", "zhit")
+          .attr("cx", function (p) { return X(p[0]); }).attr("cy", function (p) { return p[1] * s; })
+          .attr("rx", z.r[0] * s).attr("ry", z.r[1] * s)
+          .datum(d);
+      });
 
       // etichette: misura l'altezza del testo prima di impaginare
       var gLabs = gRow.append("g");
@@ -349,28 +361,35 @@
     Radar.enter(rest, phase, function (s) { s.style("opacity", 0); }, function (s) { s.style("opacity", 1); }, 300);
 
     // ---------- Interazione ----------
-    var marks = svg.selectAll(".mark");
+    // l'evidenziazione cambia solo quando cambia la voce: muovendo il cursore dentro
+    // la stessa voce, o passando tra i suoi pezzi (cerchio, testo, linea, zone), non si spegne
+    var marks = svg.selectAll(".mark"), cur = null, html = "", offTimer;
     function on(ev, d) {
-      marks.classed("is-dimmed", function (m) { return m.k !== d.k; });
+      clearTimeout(offTimer);
+      if (cur !== d.k) {
+        cur = d.k;
+        marks.classed("is-dimmed", function (m) { return m.k !== d.k; });
+        var rows2 = d.s ? [["Dettaglio", d.s]] : [];
+        html = Radar.tipHTML({ title: d.n, value: d.lab + "%", unit: "degli infortuni", rows: rows2, note: d.note || null });
+      }
       var p = d3.pointer(ev, chart);
-      var rows2 = d.s ? [["Dettaglio", d.s]] : [];
-      tip.show(Radar.tipHTML({ title: d.n, value: d.lab + "%", unit: "degli infortuni", rows: rows2, note: d.note || null }), p[0], p[1]);
+      tip.show(html, p[0], p[1]);
     }
-    function off() { marks.classed("is-dimmed", false); tip.hide(); }
-    svg.selectAll(".lab, .zone")
+    function off() { clearTimeout(offTimer); cur = null; marks.classed("is-dimmed", false); tip.hide(); }
+    offFn = off;
+    svg.selectAll(".lab, .zhit")
       .on("pointerenter", on)
       .on("pointermove", on)
       .on("pointerdown", on)
-      .on("pointerleave", function (ev) { if (ev.pointerType === "mouse") off(); });
-    svg.on("pointerdown.bg", function (ev) { if (!ev.target.closest(".lab, .zone")) off(); });
+      .on("pointerleave", function (ev) { if (ev.pointerType === "mouse") { clearTimeout(offTimer); offTimer = setTimeout(off, 150); } });
+    svg.on("pointerdown.bg", function (ev) { if (!ev.target.closest(".lab, .zhit")) off(); });
 
     // chiave della scala colori
     document.getElementById("scala").style.background =
       "linear-gradient(90deg," + d3.range(0, 1.01, 0.25).map(function (t) { return col(4.5 + t * (MAX - 4.5)); }).join(",") + ")";
     Radar.scheduleHeight();
   }
-  Radar.dismissOutside(chart, function () { svg0().selectAll(".mark").classed("is-dimmed", false); tip.hide(); });
-  function svg0() { return d3.select(fig).select("svg"); }
+  Radar.dismissOutside(chart, function () { if (offFn) offFn(); });
 })();
 </script>
 </body>
