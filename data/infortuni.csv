@@ -1,0 +1,18 @@
+sport;zona;area;dettaglio;quota_pct;quota_min_pct;quota_max_pct;approssimato;vista;note
+tennis;colonna;Colonna vertebrale;;27,5;;;;dietro;
+tennis;piede;Piede e caviglia;;12,3;;;;davanti;
+tennis;coscia;Coscia;;11,0;;;;davanti e dietro;Il dato non distingue i muscoli
+tennis;spalla;Spalla;;9,7;;;;davanti;
+tennis;ginocchio;Ginocchio;;7,5;;;;davanti;
+tennis;gomito;Gomito;;5,9;;;;davanti;
+tennis;polso;Polso;;4,5;;;;davanti;
+tennis;testa;Testa;;;;;;;Non tra le prime 12 aree: non mostrata
+squadra;caviglia;Caviglia;distorsione laterale;23,6;;;;davanti;
+squadra;spalla;Spalla;pallamano;22,0;;;;davanti;
+squadra;quadricipite;Quadricipite;;16,0;;;;davanti;
+squadra;testa;Testa;commozione cerebrale;12,7;;;;davanti;
+squadra;ischio;Ischio-crurali;;10,7;;;;dietro;
+squadra;colonna;Colonna e tronco;basket, rugby;8,6;6,1;11,1;;dietro;Intervallo tra 6,1% e 11,1%: cerchio e colore sul centro
+squadra;ginocchio;Ginocchio;lesioni interne;8,6;;;;davanti;
+squadra;polso;Mano e polso;basket;8,6;;;si;davanti;Valore approssimato
+squadra;gomito;Gomito;;;;;;;Dato non disponibile: non mostrato

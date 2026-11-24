@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Le parti del corpo più colpite dagli infortuni nel tennis e negli sport di squadra</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/radar.css">
+<style>
+  .viste { display: inline-flex; margin: 22px 0 0; border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; }
+  .viste button { font: 600 13px var(--sans); color: var(--ink-2); background: transparent; border: 0; padding: 8px 14px; cursor: pointer; }
+  .viste button + button { border-left: 1px solid var(--rule); }
+  .viste button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+  .viste button:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
+  #fig { position: relative; }
+  .vw { font-size: 12px; font-weight: 600; fill: var(--ink-2); text-anchor: middle; }
+  .fig-img { pointer-events: none; }
+  :root[data-theme="dark"] .fig-img { filter: brightness(.86) contrast(1.05); }
+  .zone ellipse { cursor: pointer; }
+  .lab { cursor: pointer; }
+  .lab .link { fill: none; stroke: var(--ink-2); stroke-width: .75; }
+  .lab .dot { fill: var(--ink); }
+  .lab .num { font-weight: 700; text-anchor: middle; dominant-baseline: central; }
+  .lab .num.halo { paint-order: stroke; stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round; fill: var(--ink); }
+  .lab .nm { font-size: 12px; font-weight: 600; fill: var(--ink); text-anchor: middle; }
+  .lab .nm2 { font-size: 12px; fill: var(--ink-2); text-anchor: middle; }
+  .lab .ring { fill: none; stroke: var(--ink); stroke-width: 1; stroke-dasharray: 2 2; }
+  .scala { display: inline-block; width: 120px; height: 10px; border-radius: 2px; }
+  .sw--dash { width: 12px; height: 12px; border-radius: 50%; border: 1px dashed var(--ink); background: var(--red-3); }
+  .r-note + .r-note { margin-top: 6px; }
+</style>
+</head>
+<body>
+<div class="radar">
+  <header>
+    <h1 class="r-title">Le parti del corpo più colpite dagli infortuni nel tennis e negli sport di squadra</h1>
+    <p class="r-sub" id="sub"></p>
+  </header>
+
+  <div class="viste" role="group" aria-label="Scegli lo sport">
+    <button type="button" data-k="tennis" aria-pressed="true">Tennista professionista</button>
+    <button type="button" data-k="squadra" aria-pressed="false">Sport di squadra</button>
+  </div>
+
+  <div class="r-chart" id="chart">
+    <p class="r-chart__head" id="head"></p>
+    <div id="fig"></div>
+  </div>
+
+  <div class="r-key" id="key">
+    <span><span id="k-min">4,5%</span><span class="scala" id="scala"></span><span id="k-max">28%</span></span>
+    <span>L'area dei cerchi è proporzionale alla quota. Stessa scala di colore e di dimensione per i due sport</span>
+    <span id="k-dash"><span class="sw sw--dash"></span>Valore approssimato o centro di un intervallo</span>
+  </div>
+  <div id="notes"></div>
+
+  <footer class="r-foot">
+    <span>Fonte: Elaborazione su dati Zupančič &amp; Marušič (2024) e Christianingsih et al. (2024)</span>
+    <span>Elaborazione Radar – QN</span>
+  </footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="../assets/radar.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  // Scala comune ai due sport: area dei cerchi e colore da 0 a MAX
+  var MAX = 28;
+
+  /* Geometria delle figure: coordinate della tavola originale
+     (figura frontale x 0-1024, y 0-1536; quella di spalle spostata di back.x).
+     p = punti sul corpo, r = raggi dell'ellisse sfumata, side = colonna dei cerchi su desktop.
+     b = parte della tavola occupata dalla figura, usata quando le figure vanno una sotto l'altra */
+  var GEO = {
+    tennis: {
+      head: "Nel tennis professionistico più di un infortunio su quattro colpisce la colonna",
+      sub: "Quota sul totale degli infortuni per area del corpo, tennisti professionisti ATP, 2012-2016, in %",
+      notes: [
+        "Le aree mostrate coprono il 78,4% degli infortuni, il resto riguarda altre aree. La testa non compare tra le prime 12 aree",
+        "I dati non distinguono il lato del corpo: i punti sono segnati su entrambi i lati. La coscia è segnata davanti e dietro perché il dato non distingue i muscoli"
+      ],
+      bounds: [0, 1828],
+      views: [
+        { k: "davanti", label: "Davanti", src: "../img/tennis.webp", x: 0, w: 1024, c: 562, b: [0, 860] },
+        { k: "dietro", label: "Dietro", src: "../img/tennis_retro.webp", x: 628, w: 1200, c: 1168, b: [870, 1828] }
+      ],
+      z: {
+        colonna:   { side: "R", p: [[1168, 560]], r: [70, 230] },
+        piede:     { side: "L", p: [[412, 1345], [697, 1345]], r: [50, 58] },
+        coscia:    { side: "L", p: [[450, 905], [667, 905], [1078, 930], [1273, 930]], r: [55, 85] },
+        spalla:    { side: "L", p: [[393, 322], [735, 322]], r: [58, 58] },
+        ginocchio: { side: "L", p: [[450, 1030], [667, 1030]], r: [45, 45] },
+        gomito:    { side: "L", p: [[337, 600], [795, 612]], r: [40, 40] },
+        polso:     { side: "L", p: [[277, 752], [802, 778]], r: [38, 38] }
+      }
+    },
+    squadra: {
+      head: "Negli sport di squadra pesano caviglia e spalla",
+      sub: "Quota sul totale degli infortuni nello sport o nel gruppo di studi indicato, in %",
+      notes: [
+        "Rassegna di revisioni su basket, calcio, pallavolo, hockey su ghiaccio, rugby e pallamano. Ogni valore viene da uno sport o da un gruppo di studi diverso, le quote non si sommano e non sono confrontabili una per una con quelle del tennis",
+        "Alcune voci sono tipi di lesione (distorsione, commozione, lesioni interne) e non aree intere. Per la colonna il colore e il cerchio corrispondono al centro dell'intervallo. Il gomito non è indicato per mancanza di dati. I dati non distinguono il lato del corpo"
+      ],
+      bounds: [200, 1725],
+      views: [
+        { k: "davanti", label: "Davanti", src: "../img/squadra.webp", x: 0, w: 1024, c: 483, b: [190, 930] },
+        { k: "dietro", label: "Dietro", src: "../img/squadra_retro.webp", x: 898, w: 1014, c: 1250, b: [940, 1730] }
+      ],
+      z: {
+        caviglia:     { side: "L", p: [[322, 1365], [622, 1365]], r: [50, 58] },
+        spalla:       { side: "L", p: [[307, 322], [660, 322]], r: [58, 58] },
+        quadricipite: { side: "L", p: [[382, 905], [592, 905]], r: [55, 85] },
+        testa:        { side: "L", p: [[483, 115]], r: [70, 85] },
+        ischio:       { side: "R", p: [[1153, 940], [1348, 940]], r: [55, 90] },
+        colonna:      { side: "R", p: [[1250, 560]], r: [70, 230] },
+        ginocchio:    { side: "L", p: [[345, 1035], [607, 1035]], r: [45, 45] },
+        polso:        { side: "L", p: [[232, 765], [727, 765]], r: [40, 40] }
+      }
+    }
+  };
+
+  var fmt1 = function (v) { return Radar.fmt(v, 1); };
+  var fig = document.getElementById("fig");
+  var chart = document.getElementById("chart");
+  var tip = Radar.tooltip(chart);
+  var DATA = {}, sport = "tennis", played = Radar.reduced, uid = 0;
+
+  function cssVar(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+  function colorScale() {
+    return d3.scaleLinear()
+      .domain([4, 10, 16, 22, MAX])
+      .range(["--red-5", "--red-4", "--red-3", "--red-2", "--red-1"].map(cssVar))
+      .interpolate(d3.interpolateLab)
+      .clamp(true);
+  }
+  function lum(c) {
+    var r = d3.rgb(c);
+    var a = [r.r, r.g, r.b].map(function (v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+    return 0.2126 * a[0] + 0.7152 * a[1] + 0.0722 * a[2];
+  }
+
+  Radar.loadCSV("../data/infortuni.csv").then(function (rows) {
+    rows.forEach(function (d) {
+      var v = Radar.num(d.quota_pct);
+      if (v == null) return;                       // testa (tennis) e gomito (squadra): solo nelle note
+      var lo = Radar.num(d.quota_min_pct), hi = Radar.num(d.quota_max_pct);
+      var approx = d.approssimato === "si";
+      (DATA[d.sport] = DATA[d.sport] || []).push({
+        k: d.zona, n: d.area, s: d.dettaglio, v: v, note: d.note, vista: d.vista,
+        dashed: approx || lo != null,
+        lab: lo != null ? fmt1(lo) + "-" + fmt1(hi) : (approx ? "≈" : "") + fmt1(v)
+      });
+    });
+    var h = location.hash.replace("#", "");
+    if (GEO[h] && DATA[h]) sport = h;
+    setSport(sport, true);
+    Radar.responsive(fig, function (w, phase) {
+      if (phase !== "pre") played = true;
+      draw(w, phase);
+    });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(redraw);
+    new MutationObserver(redraw).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "data-bg"] });
+  }).catch(function (e) { Radar.fail(fig, e); });
+
+  function redraw() { draw(Math.floor(fig.getBoundingClientRect().width), played ? "static" : "pre"); }
+
+  function setSport(k, first) {
+    sport = k;
+    var g = GEO[k];
+    document.getElementById("sub").textContent = g.sub;
+    document.getElementById("head").textContent = g.head;
+    document.getElementById("notes").innerHTML = g.notes.map(function (n, i) {
+      return '<p class="r-note">' + (i ? "" : "Nota: ") + n + "</p>";
+    }).join("");
+    document.getElementById("k-dash").style.display = DATA[k].some(function (d) { return d.dashed; }) ? "" : "none";
+    d3.selectAll(".viste button").attr("aria-pressed", function () { return this.getAttribute("data-k") === k; });
+    if (!first) {
+      try { history.replaceState(null, "", "#" + k); } catch (e) {}
+      draw(Math.floor(fig.getBoundingClientRect().width), played ? "play" : "pre");
+    }
+  }
+  window.addEventListener("hashchange", function () {
+    var h = location.hash.replace("#", "");
+    if (GEO[h] && DATA[h] && h !== sport) { tip.hide(); setSport(h); }
+  });
+  d3.selectAll(".viste button").on("click", function () {
+    var k = this.getAttribute("data-k");
+    if (k !== sport) { tip.hide(); setSport(k); }
+  });
+
+  // ---------- Impaginazione dei cerchi in colonna, senza sovrapposizioni ----------
+  function stack(items, top, bottom, gap) {
+    items.sort(function (a, b) { return a.ty - b.ty; });
+    var i, it, prev;
+    function fwd() {
+      for (i = 0; i < items.length; i++) {
+        it = items[i]; prev = items[i - 1];
+        var minY = prev ? prev.y + prev.R + prev.lh + gap + it.R : top + it.R;
+        it.y = Math.max(it.y, minY);
+      }
+    }
+    items.forEach(function (d) { d.y = d.ty; });
+    fwd();
+    for (i = items.length - 1; i >= 0; i--) {           // risale se esce dal fondo della figura
+      it = items[i];
+      var maxBottom = i === items.length - 1 ? bottom : items[i + 1].y - items[i + 1].R - gap;
+      var b = it.y + it.R + it.lh;
+      if (b > maxBottom) it.y -= b - maxBottom;
+    }
+    fwd();                                              // se non entra, l'altezza cresce
+    return items.length ? d3.max(items, function (d) { return d.y + d.R + d.lh; }) : 0;
+  }
+
+  // ---------- Disegno ----------
+  function draw(W, phase) {
+    if (!W || !DATA[sport]) return;
+    var G = GEO[sport], data = DATA[sport];
+    var narrow = Radar.isNarrow(W), dark = document.documentElement.getAttribute("data-theme") === "dark";
+    var col = colorScale();
+    var RMAX = narrow ? 30 : 38;
+    var TOPP = 24, GAP = 10;
+    var rScale = function (v) { return RMAX * Math.sqrt(v / MAX); };
+
+    // righe: su desktop una sola tavola con le due figure e i cerchi ai lati;
+    // sotto i 520px ogni figura ha la sua riga con i cerchi a destra
+    var rows;
+    if (!narrow) {
+      var colW = W >= 700 ? 140 : 124;
+      rows = [{ views: G.views, u: G.bounds, fx: colW, fw: W - 2 * colW,
+        cols: { L: colW / 2, R: W - colW / 2 }, colW: colW,
+        items: data.map(function (d) { return { d: d, side: G.z[d.k].side }; }) }];
+    } else {
+      var cw = Math.min(150, Math.round(W * 0.42));
+      var used = {};
+      rows = G.views.map(function (v) {
+        var its = data.filter(function (d) {
+          if (used[d.k]) return false;
+          var inView = G.z[d.k].p.some(function (p) { return p[0] >= v.b[0] && p[0] <= v.b[1]; });
+          if (inView) used[d.k] = true;
+          return inView;
+        }).map(function (d) { return { d: d, side: "R" }; });
+        return { views: [v], u: v.b, fx: 0, fw: W - cw - 6, cols: { R: W - cw / 2 }, colW: cw, items: its };
+      });
+    }
+
+    var svg = d3.select(fig).selectAll("svg").data([0]).join("svg").attr("width", W);
+    svg.selectAll("*").remove();
+    svg.append("title").text(
+      d3.select(".viste [aria-pressed=true]").text() + ": " +
+      data.map(function (d) { return d.n.toLowerCase() + " " + d.lab + "%"; }).join(", ")
+    );
+    svg.attr("role", "img").attr("aria-label", svg.select("title").text());
+    var defs = svg.append("defs");
+
+    var y0 = 0, rowGap = 26, allLab = [], allZone = [];
+    rows.forEach(function (row, ri) {
+      var s = row.fw / (row.u[1] - row.u[0]);
+      var X = function (ux) { return row.fx + (ux - row.u[0]) * s; };
+      var figH = 1536 * s;
+      var gRow = svg.append("g").attr("transform", "translate(0," + y0 + ")");
+      var gFig = gRow.append("g").attr("transform", "translate(0," + TOPP + ")");
+
+      // figure
+      row.views.forEach(function (v) {
+        gRow.append("text").attr("class", "vw").attr("x", X(v.c)).attr("y", 12).text(v.label);
+        gFig.append("image").attr("class", "fig-img").attr("href", v.src)
+          .attr("x", X(v.x)).attr("y", 0).attr("width", v.w * s).attr("height", figH)
+          .attr("preserveAspectRatio", "none");
+      });
+      if (narrow) {                                   // solo la figura della riga
+        var cp = "cp" + (++uid);
+        defs.append("clipPath").attr("id", cp).append("rect")
+          .attr("x", 0).attr("y", -TOPP).attr("width", row.fw).attr("height", figH + TOPP);
+        gFig.attr("clip-path", "url(#" + cp + ")");
+      }
+
+      // zone sfumate sul corpo
+      var gZones = gFig.append("g");
+      data.forEach(function (d) {
+        var z = G.z[d.k], c = col(d.v), id = "g" + (++uid);
+        var grad = defs.append("radialGradient").attr("id", id);
+        grad.append("stop").attr("offset", 0).attr("stop-color", c).attr("stop-opacity", dark ? 0.8 : 0.95);
+        grad.append("stop").attr("offset", 0.55).attr("stop-color", c).attr("stop-opacity", dark ? 0.6 : 0.8);
+        grad.append("stop").attr("offset", 1).attr("stop-color", c).attr("stop-opacity", 0);
+        var pts = z.p.filter(function (p) { return p[0] >= row.u[0] - 60 && p[0] <= row.u[1] + 60; });
+        if (!pts.length) return;
+        var g = gZones.append("g").attr("class", "zone mark").attr("data-k", d.k).datum(d);
+        g.selectAll("ellipse").data(pts).join("ellipse")
+          .attr("cx", function (p) { return X(p[0]); }).attr("cy", function (p) { return p[1] * s; })
+          .attr("rx", z.r[0] * 1.35 * s).attr("ry", z.r[1] * 1.35 * s)
+          .style("fill", "url(#" + id + ")")
+          .style("mix-blend-mode", dark ? "normal" : "multiply");
+        allZone.push(g);
+      });
+
+      // etichette: misura l'altezza del testo prima di impaginare
+      var gLabs = gRow.append("g");
+      row.items.forEach(function (it) {
+        var d = it.d, z = G.z[d.k];
+        it.R = rScale(d.v);
+        var pts = z.p.filter(function (p) { return p[0] >= row.u[0] && p[0] <= row.u[1]; });
+        var a = pts.reduce(function (m, p) { return (it.side === "L" ? p[0] < m[0] : p[0] > m[0]) ? p : m; });
+        it.ax = X(a[0]); it.ay = TOPP + a[1] * s; it.ty = it.ay;
+        it.g = gLabs.append("g").attr("class", "lab mark").attr("data-k", d.k).datum(d);
+        it.t = it.g.append("g");
+        var nm = it.t.append("text").attr("class", "nm").attr("x", 0).attr("y", 0).attr("dy", 11).text(d.n);
+        Radar.wrap(nm, row.colW - 10, 1.25);
+        var nl = +nm.attr("data-lines") || 1, lh = nl * 15;
+        if (d.s) {
+          var nm2 = it.t.append("text").attr("class", "nm2").attr("x", 0).attr("y", lh).attr("dy", 11).text(d.s);
+          Radar.wrap(nm2, row.colW - 10, 1.25);
+          lh += (+nm2.attr("data-lines") || 1) * 15;
+        }
+        it.lh = lh + 6;
+      });
+      var bottom = TOPP + figH;
+      var hL = stack(row.items.filter(function (i) { return i.side === "L"; }), 2, bottom, GAP);
+      var hR = stack(row.items.filter(function (i) { return i.side === "R"; }), 2, bottom, GAP);
+
+      row.items.forEach(function (it) {
+        var d = it.d, cx = row.cols[it.side], dir = it.side === "L" ? 1 : -1;
+        var ex = cx + dir * it.R, c = col(d.v);
+        it.g.insert("path", ":first-child").attr("class", "link")
+          .attr("d", "M" + it.ax + "," + it.ay + "L" + (ex + dir * 12) + "," + it.y + "H" + ex);
+        it.g.insert("circle", ":first-child").attr("class", "dot").attr("cx", it.ax).attr("cy", it.ay).attr("r", 2.5);
+        it.circle = it.g.append("circle").attr("class", "bub").attr("cx", cx).attr("cy", it.y).style("fill", c);
+        if (d.dashed) it.ring = it.g.append("circle").attr("class", "ring").attr("cx", cx).attr("cy", it.y).attr("r", it.R + 2.5);
+        var fs = narrow ? 12 : 13;
+        var num = it.g.append("text").attr("class", "num").attr("x", cx).attr("y", it.y)
+          .style("font-size", fs + "px").text(d.lab);
+        var tw = num.node().getComputedTextLength();
+        while (tw > it.R * 2 - 6 && fs > 10) { fs--; num.style("font-size", fs + "px"); tw = num.node().getComputedTextLength(); }
+        if (tw > it.R * 2 - 4) num.classed("halo", true);
+        else num.style("fill", lum(c) < 0.3 ? "#ffffff" : "#1a1a1a");
+        it.num = num;
+        it.t.attr("transform", "translate(" + cx + "," + (it.y + it.R + 6) + ")");
+        allLab.push(it);
+      });
+
+      y0 += Math.max(bottom, hL, hR) + (ri < rows.length - 1 ? rowGap : 4);
+    });
+    svg.attr("height", Math.ceil(y0)).attr("viewBox", "0 0 " + W + " " + Math.ceil(y0));
+
+    // ---------- Animazione d'ingresso ----------
+    var zones = svg.selectAll(".zone"), bubs = svg.selectAll(".lab .bub"), rest = svg.selectAll(".lab .num, .lab .ring, .lab > g, .lab .link");
+    Radar.enter(zones, phase, function (s) { s.style("opacity", 0); }, function (s) { s.style("opacity", 1); });
+    Radar.enter(bubs, phase, function (s) { s.attr("r", 0); },
+      function (s) { s.attr("r", function () { return rScale(d3.select(this.parentNode).datum().v); }); }, 120);
+    Radar.enter(rest, phase, function (s) { s.style("opacity", 0); }, function (s) { s.style("opacity", 1); }, 300);
+
+    // ---------- Interazione ----------
+    var marks = svg.selectAll(".mark");
+    function on(ev, d) {
+      marks.classed("is-dimmed", function (m) { return m.k !== d.k; });
+      var p = d3.pointer(ev, chart);
+      var rows2 = d.s ? [["Dettaglio", d.s]] : [];
+      tip.show(Radar.tipHTML({ title: d.n, value: d.lab + "%", unit: "degli infortuni", rows: rows2, note: d.note || null }), p[0], p[1]);
+    }
+    function off() { marks.classed("is-dimmed", false); tip.hide(); }
+    svg.selectAll(".lab, .zone")
+      .on("pointerenter", on)
+      .on("pointermove", on)
+      .on("pointerdown", on)
+      .on("pointerleave", function (ev) { if (ev.pointerType === "mouse") off(); });
+    svg.on("pointerdown.bg", function (ev) { if (!ev.target.closest(".lab, .zone")) off(); });
+
+    // chiave della scala colori
+    document.getElementById("scala").style.background =
+      "linear-gradient(90deg," + d3.range(0, 1.01, 0.25).map(function (t) { return col(4.5 + t * (MAX - 4.5)); }).join(",") + ")";
+    Radar.scheduleHeight();
+  }
+  Radar.dismissOutside(chart, function () { svg0().selectAll(".mark").classed("is-dimmed", false); tip.hide(); });
+  function svg0() { return d3.select(fig).select("svg"); }
+})();
+</script>
+</body>
+</html>
