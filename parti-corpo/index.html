@@ -45,7 +45,6 @@
   </div>
 
   <div class="r-chart" id="chart">
-    <p class="r-chart__head" id="head"></p>
     <div id="fig"></div>
   </div>
 
@@ -77,7 +76,6 @@
      b = parte della tavola occupata dalla figura, usata quando le figure vanno una sotto l'altra */
   var GEO = {
     tennis: {
-      head: "Nel tennis professionistico più di un infortunio su quattro colpisce la colonna",
       sub: "Quota sul totale degli infortuni per area del corpo, tennisti professionisti ATP, 2012-2016, in %",
       notes: [
         "Le aree mostrate coprono il 78,4% degli infortuni, il resto riguarda altre aree. La testa non compare tra le prime 12 aree",
@@ -99,7 +97,6 @@
       }
     },
     squadra: {
-      head: "Negli sport di squadra pesano caviglia e spalla",
       sub: "Quota sul totale degli infortuni nello sport o nel gruppo di studi indicato, in %",
       notes: [
         "Rassegna di revisioni su basket, calcio, pallavolo, hockey su ghiaccio, rugby e pallamano. Ogni valore viene da uno sport o da un gruppo di studi diverso, le quote non si sommano e non sono confrontabili una per una con quelle del tennis",
@@ -172,7 +169,6 @@
     sport = k;
     var g = GEO[k];
     document.getElementById("sub").textContent = g.sub;
-    document.getElementById("head").textContent = g.head;
     document.getElementById("notes").innerHTML = g.notes.map(function (n, i) {
       return '<p class="r-note">' + (i ? "" : "Nota: ") + n + "</p>";
     }).join("");

@@ -35,8 +35,8 @@
   var BASE = "https://cosimofire.github.io/infortuni-sport/";
   var EMBED = '(function(){if(window.__radarQNv2)return;window.__radarQNv2=1;var O="https://cosimofire.github.io";var MQ=window.matchMedia("(prefers-color-scheme:dark)");function frames(){return Array.prototype.filter.call(document.getElementsByTagName("iframe"),function(f){return(f.getAttribute("src")||"").indexOf(O+"/")===0;});}function theme(){var t=document.documentElement.getAttribute("data-theme");return t==="dark"||t==="light"?t:(MQ.matches?"dark":"light");}function bgOf(el){for(;el&&el.nodeType===1;el=el.parentElement){var c=getComputedStyle(el).backgroundColor;if(c&&c !=="transparent"&&!/rgba\\([^)]*,\\s*0\\)$/.test(c))return c;}return null;}function send(f){try{f.contentWindow.postMessage({sentinel:"radar-qn",type:"theme",theme:theme(),bg:bgOf(f.parentElement)},O);}catch(e){}}function sendAll(){frames().forEach(send);}window.addEventListener("message",function(e){if(e.origin !==O)return;var d=e.data;if(!d||d.sentinel !=="radar-qn"||d.type !=="height")return;frames().forEach(function(f){if(f.contentWindow !==e.source)return;var h=Math.ceil(+d.height);if(h > 0&&20000 > h)f.style.height=h+"px";send(f);});});new MutationObserver(function(){sendAll();setTimeout(sendAll,400);}).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});if(MQ.addEventListener)MQ.addEventListener("change",sendAll);})();';
   var VIZ = [
-    { slug: "parti-corpo/#tennis", title: "Infortuni nel tennis e negli sport di squadra (apre sul tennis)", h: 840 },
-    { slug: "parti-corpo/#squadra", title: "Infortuni nel tennis e negli sport di squadra (apre sugli sport di squadra)", h: 1040 }
+    { slug: "parti-corpo/#tennis", title: "Infortuni nel tennis e negli sport di squadra (apre sul tennis)", h: 820 },
+    { slug: "parti-corpo/#squadra", title: "Infortuni nel tennis e negli sport di squadra (apre sugli sport di squadra)", h: 1020 }
   ];
   var list = document.getElementById("list");
   VIZ.forEach(function (v) {
